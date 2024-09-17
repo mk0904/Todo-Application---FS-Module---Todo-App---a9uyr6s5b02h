@@ -1,79 +1,77 @@
-const path = './db.txt';
-const { readFileSync: rfs, writeFileSync: wfs } = require('fs');
-
-// Helper function to read and parse todos from db.txt
-const readTodos = () => {
-  const data = rfs(path, 'utf-8').trim();
-  if (data) {
-    return data.split('\n').map(line => JSON.parse(line)); // Return array of todos
-  }
-  return [];
-};
-
-// Helper function to write todos to db.txt
-const writeTodos = (todos) => {
-  const data = todos.map(todo => JSON.stringify(todo, null, 2)).join('\n');
-  wfs(path, data, 'utf-8');
-};
-
-// Get all todos
+const fs = require('fs');
+const path = require('path');
 const getTodosSync = () => {
-  return rfs(path, 'utf-8'); // Return raw data without formatting
+  return fs.readFileSync('db.txt', 'utf-8');
 };
-
-// Get a specific todo by ID
 const getTodoSync = (id) => {
-  const todos = readTodos();
-  const todo = todos.find(todo => todo.id === id);
-  return todo ? JSON.stringify(todo, null, 2) : null;
+  const data = getTodosSync();
+  const strippedData = data.split("}");
+  strippedData.pop()
+  const formattedData = strippedData.map(it => {
+    if(it != ''){
+      return JSON.parse(it + '}')
+    }
+    return '';
+  })
+  // formattedData.pop();
+  return JSON.stringify(formattedData.find(it => it.id == id));
 };
-
-// Create a new todo
-const createTodoSync = (title) => {
-  const todos = readTodos();
-  const newTodo = {
-    id: Date.now(),
-    title: title,
-    isCompleted: false,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  };
-  todos.push(newTodo);
-  writeTodos(todos);
-  return newTodo;
+const createTodoSync = (todo) => {
+  let Todo = {
+    "id": Date.now(),
+    "title": todo,
+    "isCompleted": false,
+    "createdAt": new Date().toISOString(),
+    "updatedAt": new Date().toISOString()
+  }
+  fs.appendFileSync("db.txt", JSON.stringify(Todo, null, 2));
 };
-
-// Update a todo by ID
 const updateTodoSync = (id, updates) => {
-  const todos = readTodos();
-  const index = todos.findIndex(todo => todo.id === id);
-  if (index !== -1) {
-    todos[index] = {
-      ...todos[index],
-      ...updates,
-      updatedAt: new Date().toISOString(),
-    };
-    writeTodos(todos);
-    return todos[index];
-  }
-  return null;
+  const data = getTodosSync();
+  const strippedData = data.split("}");
+  strippedData.pop()
+  const formattedData = strippedData.map(it => {
+    if(it != ''){
+      return JSON.parse(it + '}')
+    }
+    return '';
+  })
+  // formattedData.pop();
+  const updatedArray = formattedData.map(it => {
+    if(it.id == id){
+      if(updates.title){
+        it.title = updates.title
+      }
+      if(updates.isCompleted){
+        it.isCompleted = updates.isCompleted
+      }
+      it.updatedAt =  new Date().toISOString();
+    }
+    return it
+  });
+  const DBData =  updatedArray.reduce((prev, it) => {
+    return prev + JSON.stringify(it, null, 2);
+  }, "");
+  console.log(DBData)
+  fs.writeFileSync('db.txt', DBData);
 };
-
-// Delete a todo by ID
-const deleteTodoSync = (id) => {
-  const todos = readTodos();
-  const updatedTodos = todos.filter(todo => todo.id !== id);
-  if (updatedTodos.length !== todos.length) {
-    writeTodos(updatedTodos);
-    return true;
-  }
-  return false;
+const deleteTodoSync = () => {
+  fs.writeFileSync('db.txt', "");
 };
-
+const getTodos = () => {};
+const getTodo = (id) => {};
+const createTodo = (todo) => {};
+const updateTodo = async (id, updates) => {};
+const deleteTodo = async (id) => {};
 module.exports = {
   getTodosSync,
   getTodoSync,
   createTodoSync,
   updateTodoSync,
   deleteTodoSync,
+  getTodos,
+  getTodo,
+  createTodo,
+  deleteTodo,
+  updateTodo,
 };
